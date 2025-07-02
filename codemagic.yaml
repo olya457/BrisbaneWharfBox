@@ -1,68 +1,53 @@
 workflows:
-  react-native-ios:
-    name: React Native iOS Build
+  sample-workflow:
+    name: Brisbane Wharf Box
     max_build_duration: 120
     instance_type: mac_mini_m2
-
     integrations:
-      app_store_connect: "Brisbane Wharf Box API"
-
+      app_store_connect: Brisbane Wharf Box API
     environment:
-      groups:
-        - Box
-
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.briscsba.neharfosde
-
       vars:
-        BUNDLE_ID: "com.briscsba.neharfosde"
-        XCODE_WORKSPACE: "ios/BrisbaneWharfBox.xcworkspace"
-        XCODE_SCHEME: "BrisbaneWharfBox"
-        APP_STORE_APPLE_ID: 6748035304
-
-      node: 18.18.0
-      xcode: latest
-
+        APP_STORE_APPLE_ID: 6748035304 #change
+        BUNDLE_ID: 'com.briscsba.neharfosde'
+        XCODE_WORKSPACE: 'ios/BrisbaneWharfBox.xcworkspace'
+        XCODE_SCHEME: 'BrisbaneWharfBox'
     scripts:
-      - name: Clean cache and pods
-        script: |
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf ios/Pods
-          cd ios
-          pod deintegrate
-          pod install
-          cd ..
-
-      - name: Install dependencies
+      - name: Install node modules
         script: |
           npm install
-
-      - name: Set up provisioning profiles
-        script: xcode-project use-profiles
-
-      - name: Build IPA
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install
+      - name: Set up provisioning profile settings on  Xcode project
+        script: |
+          cd ios
+          xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          #!/bin/sh
+          cd $CM_BUILD_DIR/ios
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+      - name: Set Info.plist values
+        script: |
+          PLIST=$CM_BUILD_DIR/ios/AwesomeProject/Info.plist
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
+      - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --verbose
-
+            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-
     publishing:
-      email:
-        recipients:
-          - olya0665643972@gmail.com
-        notify:
-          success: true
-          failure: true
-
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
-        submit_to_app_store: false
+        submit_to_app_store: true
+        copyright: Brisbane Wharf Box 2025
