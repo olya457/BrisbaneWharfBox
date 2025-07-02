@@ -1,4 +1,4 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
+
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
@@ -17,7 +17,6 @@ end
 target 'BrisbaneWharfBox' do
   config = use_native_modules!
 
-  # ✅ Подключаем react-native-maps без GoogleMaps
   pod 'react-native-maps', :path => '../node_modules/react-native-maps'
 
   use_react_native!(
